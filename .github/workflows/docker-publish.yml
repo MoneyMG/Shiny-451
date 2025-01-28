@@ -26,3 +26,5 @@ jobs:
         file: ./Dockerfile
         push: true
         tags: MoneyMG/app-shiny-451:latest
+      secrets:
+          GIT_AUTH: ${{ secrets.GIT_AUTH }}
