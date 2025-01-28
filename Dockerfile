@@ -2,9 +2,9 @@
 FROM --platform=linux/amd64 rocker/shiny-verse:latest 
 RUN apt-get update && apt-get install -y git
 
-ENV GIT_AUTH=${GIT_AUTH}
 
-RUN git clone https://${GIT_AUTH}@github.com/MoneyMG/Shiny-451.git /srv/shiny-server/shiny-451
+
+RUN git clone https://github.com/MoneyMG/Shiny-451.git /srv/shiny-server/shiny-451
 RUN Rscript /srv/shiny-server/shiny-451/requirements.R
 
 # Make the Shiny app available at port 3838
