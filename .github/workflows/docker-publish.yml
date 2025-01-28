@@ -24,7 +24,7 @@ jobs:
       with:
         context: .
         file: ./Dockerfile
-        push: true
+        push: False
         tags: MoneyMG/app-shiny-451:latest
         build-args: |
             GIT_AUTH=${{ secrets.GIT_AUTH }}
