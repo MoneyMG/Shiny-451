@@ -1,4 +1,5 @@
-FROM --platform=linux/amd64 rocker/shiny-verse:latest #probably going to have to change the platform but I also dont know what it means atm
+#probably going to have to change the platform but I also dont know what it means atm
+FROM --platform=linux/amd64 rocker/shiny-verse:latest 
 RUN apt-get update && apt-get install -y git
 
 
