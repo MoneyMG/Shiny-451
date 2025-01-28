@@ -10,6 +10,6 @@ RUN Rscript /srv/shiny-server/shiny-451/requirements.R
 # Make the Shiny app available at port 3838
 EXPOSE 3838
 
-# Run the app
+# Run the app 1
 CMD ["R", "-e", "shiny::runApp('/srv/shiny-server/shiny-451/', host = '0.0.0.0', port = 3838)"]
 
