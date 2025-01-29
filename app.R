@@ -50,7 +50,7 @@ server <- function(input, output) {
         
         dat <- zoo::zoo(rets[,-1], order.by = rets$date)
         
-        plt <- PerformanceAnalytics::chart.CumReturns(dat, main="Cumulative Returns")
+        plt <- PerformanceAnalytics::charts.PerformanceSummary(dat, main="Performance Summary",legend.loc = "topleft")
         
         return(plt)
         
