@@ -3,7 +3,7 @@ library(dplyr)
 library(stringr)
 library(tidyquant)
 library(ggplot2)
-library(zoo)
+library(xts)
 library(PerformanceAnalytics)
 library(corrplot)
 
@@ -23,8 +23,8 @@ ui <- fluidPage(
         ),
         mainPanel(
            plotOutput("ddPlot"),
-           plotOutput("klusterPlot"),
-           plotOutput('corrPlot')
+           plotOutput("klusterPlot")
+           #plotOutput('corrPlot')
         )
     )
 )
@@ -46,9 +46,10 @@ server <- function(input, output) {
           dplyr::group_by(symbol) %>% 
           dplyr::mutate(ret = (adjusted /dplyr::lag(adjusted) - 1)) %>% 
           tidyr::drop_na() %>% 
-          tidyr::pivot_wider(id_cols = date, names_from = symbol, values_from = ret)
+          tidyr::pivot_wider(id_cols = date, names_from = symbol, values_from = ret) %>% 
+          tidyr::drop_na()
         
-        dat <- zoo::zoo(rets[,-1], order.by = rets$date)
+        dat <- xts::xts(rets[,-1], order.by = rets$date)
         
         plt <- PerformanceAnalytics::charts.PerformanceSummary(dat, main="Performance Summary",legend.loc = "topleft")
         
@@ -104,35 +105,35 @@ server <- function(input, output) {
       
       })
       
-      output$corrPlot <- renderPlot({
-        
-        tickers <- stringr::str_split(stringr::str_replace_all(input$ticker, ' ', ''), ',')[[1]]
-        dates <-  input$daterange
-        
-        rets <- tidyquant::tq_get(
-          x = tickers,
-          get = 'stock.prices',
-          from = dates[1],
-          to = dates[2]
-        ) %>% 
-          dplyr::group_by(symbol) %>% 
-          dplyr::mutate(ret = (adjusted /dplyr::lag(adjusted) - 1)) %>% 
-          tidyr::drop_na() %>% 
-          tidyr::pivot_wider(id_cols = date, names_from = symbol, values_from = ret) %>% 
-          dplyr::select(-date)
-        
-        corrs <- stats::cor(rets, method = 'kendall')
-        
-        plt <- corrplot::corrplot(
-          corr = corrs,
-          method = 'number',
-          order = 'AOE',
-          type = 'lower'
-        )
-      
-        return(plt)
-        
-      })
+      # output$corrPlot <- renderPlot({
+      #   
+      #   tickers <- stringr::str_split(stringr::str_replace_all(input$ticker, ' ', ''), ',')[[1]]
+      #   dates <-  input$daterange
+      #   
+      #   rets <- tidyquant::tq_get(
+      #     x = tickers,
+      #     get = 'stock.prices',
+      #     from = dates[1],
+      #     to = dates[2]
+      #   ) %>% 
+      #     dplyr::group_by(symbol) %>% 
+      #     dplyr::mutate(ret = (adjusted /dplyr::lag(adjusted) - 1)) %>% 
+      #     tidyr::drop_na() %>% 
+      #     tidyr::pivot_wider(id_cols = date, names_from = symbol, values_from = ret) %>% 
+      #     dplyr::select(-date)
+      #   
+      #   corrs <- stats::cor(rets, method = 'kendall')
+      #   
+      #   plt <- corrplot::corrplot(
+      #     corr = corrs,
+      #     method = 'number',
+      #     order = 'AOE',
+      #     type = 'lower'
+      #   )
+      # 
+      #   return(plt)
+      #   
+      # })
     
 }
 
