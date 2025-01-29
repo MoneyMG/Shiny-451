@@ -1,9 +1,11 @@
 library(shiny)
 library(dplyr)
+library(stringr)
 library(tidyquant)
 library(ggplot2)
 library(zoo)
 library(PerformanceAnalytics)
+library(corrplot)
 
 ui <- fluidPage(
 
@@ -13,12 +15,16 @@ ui <- fluidPage(
     
     sidebarLayout(
         sidebarPanel(
-            textInput('ticker', 'Enter stock ticker', value = 'SPY'),
+            textInput('ticker', 'Enter Comma Deliniated Tickers', value = "IVV, IYF, IYM, IYW, IYE, IYJ, IYK, IDU, IYZ, IYR"),
             dateRangeInput('daterange', 'Date Range',
-                      start = Sys.Date() - 365, end = Sys.Date())
+                      start = Sys.Date() - 365, end = Sys.Date()),
+            textInput('klusters', 'Enter Number of Klusters', value = 5),
+            textInput('seed', 'Input seed', value = 123)
         ),
         mainPanel(
-           plotOutput("ddPlot")
+           plotOutput("ddPlot"),
+           plotOutput("klusterPlot"),
+           plotOutput('corrPlot')
         )
     )
 )
@@ -28,26 +34,105 @@ server <- function(input, output) {
 
     output$ddPlot <- renderPlot({
         
-        ticker = input$ticker
-        dates = input$daterange
+        tickers <- stringr::str_split(stringr::str_replace_all(input$ticker, ' ', ''), ',')[[1]]
+        dates <-  input$daterange
         
         rets <- tidyquant::tq_get(
-          x = ticker,
+          x = tickers,
           get = 'stock.prices',
           from = dates[1],
           to = dates[2]
         ) %>% 
+          dplyr::group_by(symbol) %>% 
           dplyr::mutate(ret = (adjusted /dplyr::lag(adjusted) - 1)) %>% 
           tidyr::drop_na() %>% 
           tidyr::pivot_wider(id_cols = date, names_from = symbol, values_from = ret)
         
         dat <- zoo::zoo(rets[,-1], order.by = rets$date)
         
-        plt <- PerformanceAnalytics::chart.Drawdown(dat, engine = 'ggplot2')
+        plt <- PerformanceAnalytics::chart.CumReturns(dat, main="Cumulative Returns")
         
         return(plt)
         
     })
+    
+   output$klusterPlot <- renderPlot({
+      
+      tickers <- stringr::str_split(stringr::str_replace_all(input$ticker, ' ', ''), ',')[[1]]
+      dates <-  input$daterange
+      kluster <- as.numeric(input$klusters)
+      seed <- as.numeric(input$seed)
+      
+      dat <- tidyquant::tq_get(
+        x = tickers,
+        get = 'stock.prices',
+        from = dates[1],
+        to = dates[2]
+      ) %>% 
+        dplyr::group_by(symbol) %>% 
+        dplyr::summarize(
+          avg_return = mean(adjusted / lag(adjusted) - 1, na.rm = TRUE),
+          volatility = sd(adjusted / lag(adjusted) - 1, na.rm = TRUE),
+          sharpe_ratio = avg_return / volatility
+        )
+      
+      dat_scaled <- dat %>% 
+        dplyr::select(avg_return, volatility, sharpe_ratio) %>% 
+        scale()
+      
+      set.seed(seed)
+      
+      res <- stats::kmeans(dat_scaled, centers = kluster)
+      
+      dat <- dat %>% 
+        dplyr::mutate(cluster = as.factor(res$cluster))
+      
+      plt <- ggplot(dat, aes(x = avg_return, y = volatility, color = cluster)) +
+        geom_point(size = 3) +
+        geom_text(aes(label = symbol), vjust = -0.5, hjust = 0.5) +
+        scale_x_continuous(labels = scales::percent_format(accuracy = 0.01)) +
+        scale_y_continuous(labels = scales::percent_format(accuracy = 0.01)) +
+        labs(
+          title = "Scaled K-Means Clustering",
+          x = "Average Return",
+          y = "Volatility",
+          color = "Cluster"
+        ) +
+        theme_minimal()
+      
+      return(plt)
+      
+      })
+      
+      output$corrPlot <- renderPlot({
+        
+        tickers <- stringr::str_split(stringr::str_replace_all(input$ticker, ' ', ''), ',')[[1]]
+        dates <-  input$daterange
+        
+        rets <- tidyquant::tq_get(
+          x = tickers,
+          get = 'stock.prices',
+          from = dates[1],
+          to = dates[2]
+        ) %>% 
+          dplyr::group_by(symbol) %>% 
+          dplyr::mutate(ret = (adjusted /dplyr::lag(adjusted) - 1)) %>% 
+          tidyr::drop_na() %>% 
+          tidyr::pivot_wider(id_cols = date, names_from = symbol, values_from = ret) %>% 
+          dplyr::select(-date)
+        
+        corrs <- stats::cor(rets, method = 'kendall')
+        
+        plt <- corrplot::corrplot(
+          corr = corrs,
+          method = 'number',
+          order = 'AOE',
+          type = 'lower'
+        )
+      
+        return(plt)
+        
+      })
     
 }
 
