@@ -15,10 +15,10 @@ ui <- fluidPage(
     
     sidebarLayout(
         sidebarPanel(
-            textInput('ticker', 'Enter Comma Deliniated Tickers', value = "IVV, IYF, IYM, IYW, IYE, IYJ, IYK, IDU, IYZ, IYR"),
+            textInput('ticker', 'Enter Comma Deliniated Tickers', value = "CCOM.TO, CMDY, BCI, GSG, DCMT"),
             dateRangeInput('daterange', 'Date Range',
                       start = Sys.Date() - 365, end = Sys.Date()),
-            textInput('klusters', 'Enter Number of Klusters', value = 5),
+            textInput('klusters', 'Enter Number of Klusters', value = 3),
             textInput('seed', 'Input seed', value = 123)
         ),
         mainPanel(
