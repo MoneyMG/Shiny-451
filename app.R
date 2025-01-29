@@ -2,6 +2,7 @@ library(shiny)
 library(ReturnForge)
 library(dplyr)
 library(ggplot2)
+library(zoo)
 library(PerformanceAnalytics)
 
 ui <- fluidPage(
@@ -30,7 +31,17 @@ server <- function(input, output) {
         ticker = input$ticker
         dates = input$daterange
         
-        dat <- ReturnForge::genrets(ticker, dates[1], output = 'zoo')
+        rets <- tidyquant::tq_get(
+          x = ticker,
+          get = 'stock.prices',
+          from = dates[1],
+          to = dates[2]
+        ) %>% 
+          dplyr::mutate(ret = (adjusted /dplyr::lag(adjusted) - 1)) %>% 
+          tidyr::drop_na() %>% 
+          tidyr::pivot_wider(id_cols = date, names_from = symbol, values_from = ret)
+        
+        dat <- zoo::zoo(rets[,-1], order.by = rets$date)
         
         plt <- PerformanceAnalytics::chart.Drawdown(dat, engine = 'ggplot2')
         
