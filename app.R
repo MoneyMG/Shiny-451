@@ -1,5 +1,6 @@
 library(shiny)
 library(dplyr)
+library(tidyquant)
 library(ggplot2)
 library(zoo)
 library(PerformanceAnalytics)
